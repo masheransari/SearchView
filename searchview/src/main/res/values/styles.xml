@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="DefaultSearchStyle">
+        <item name="search_layout_margin">8dp</item>
+        <item name="search_icon_color">@color/search_light_icon</item>
+        <item name="search_text_color">@color/search_light_text</item>
+        <item name="search_text_highlight_color">@color/search_light_text_highlight</item>
+        <item name="search_text_size">@dimen/search_text_medium</item>
+        <item name="search_hint_color">@color/search_light_hint</item>
+        <item name="search_animation_duration">300</item>
+        <item name="search_shadow">true</item>
+        <item name="search_shadow_color">@color/search_shadow_layout</item>
+        <item name="search_clear_on_open">false</item>
+        <item name="search_clear_on_close">true</item>
+        <item name="search_hide_on_keyboard_close">true</item>
+        <item name="search_background_color">@android:color/white</item>
+    </style>
+</resources>
