@@ -84,10 +84,10 @@ public class SearchDrawable extends Drawable{
                 drawNormalView(paint, canvas);
                 break;
             case STATE_ANIM_START:
-                drawStopAnimView(paint, canvas);
+                drawStartAnimView(paint, canvas);
                 break;
             case STATE_ANIM_STOP:
-                drawStartAnimView(paint, canvas);
+                drawStopAnimView(paint, canvas);
                 break;
         }
     }
@@ -147,27 +147,6 @@ public class SearchDrawable extends Drawable{
 
     private void drawStopAnimView(Paint paint, Canvas canvas) {
         canvas.save();
-        if (pro <= 0.25) {
-            canvas.drawLine(cx - cr, scy - scr, scx, scy - scr, paint);
-            canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * (0.25f - pro),
-                    scy - scr - scr * (0.25f - pro), paint);
-            canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * (0.25f - pro),
-                    scy - scr + scr * (0.25f - pro), paint);
-        } else if (pro > 0.25 && pro <= 0.5f) {
-            canvas.drawArc(rectF, -90, 180 * (pro - 0.25f) * 4, false, paint);
-            canvas.drawLine(cx - cr + (scx - cx + cr) * (pro - 0.25f) * 4, scy - scr,
-                    scx, scy - scr, paint);
-        } else {
-            canvas.drawLine(cx + cr * sign + cr * sign * (1 - (pro - 0.5f) * 2),
-                    cy + cr * sign + cr * sign * (1 - (pro - 0.5f) * 2),
-                    cx + cr * 2 * sign, cy + cr * 2 * sign, paint);
-            canvas.drawArc(outRectF, 45, 720 * (pro - 0.5f), false, paint);
-        }
-        canvas.restore();
-    }
-
-    private void drawStartAnimView(Paint paint, Canvas canvas) {
-        canvas.save();
         if (pro <= 0.75) {
             canvas.drawArc(outRectF, 45, 360 * (1 - pro / 0.75f), false, paint);
         }
@@ -184,6 +163,27 @@ public class SearchDrawable extends Drawable{
             canvas.drawLine(cx - cr, scy - scr, scx - 20, scy - scr, paint);
             canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * pro, scy - scr - scr * pro, paint);
             canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * pro, scy - scr + scr * pro, paint);
+        }
+        canvas.restore();
+    }
+
+    private void drawStartAnimView(Paint paint, Canvas canvas) {
+        canvas.save();
+        if (pro <= 0.25) {
+            canvas.drawLine(cx - cr, scy - scr, scx, scy - scr, paint);
+            canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * (0.25f - pro),
+                    scy - scr - scr * (0.25f - pro), paint);
+            canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * (0.25f - pro),
+                    scy - scr + scr * (0.25f - pro), paint);
+        } else if (pro > 0.25 && pro <= 0.5f) {
+            canvas.drawArc(rectF, -90, 180 * (pro - 0.25f) * 4, false, paint);
+            canvas.drawLine(cx - cr + (scx - cx + cr) * (pro - 0.25f) * 4, scy - scr,
+                    scx, scy - scr, paint);
+        } else {
+            canvas.drawLine(cx + cr * sign + cr * sign * (1 - (pro - 0.5f) * 2),
+                    cy + cr * sign + cr * sign * (1 - (pro - 0.5f) * 2),
+                    cx + cr * 2 * sign, cy + cr * 2 * sign, paint);
+            canvas.drawArc(outRectF, 45, 720 * (pro - 0.5f), false, paint);
         }
         canvas.restore();
     }

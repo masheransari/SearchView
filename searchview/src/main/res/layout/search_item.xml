@@ -7,10 +7,10 @@
     android:clickable="true"
     android:gravity="start|center_vertical"
     android:orientation="horizontal"
-    android:paddingEnd="@dimen/search_key_line"
-    android:paddingLeft="@dimen/search_key_line"
-    android:paddingRight="@dimen/search_key_line"
-    android:paddingStart="@dimen/search_key_line">
+    android:paddingEnd="@dimen/search_horizontal_padding"
+    android:paddingLeft="@dimen/search_horizontal_padding"
+    android:paddingRight="@dimen/search_horizontal_padding"
+    android:paddingStart="@dimen/search_horizontal_padding">
 
     <ImageView
         android:id="@+id/imageView_item_icon_left"

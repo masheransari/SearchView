@@ -12,10 +12,10 @@ import java.util.List;
 
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class SearchHistoryTable {
-
-    private static int mHistorySize = 2;
+    public static final String DEFAULT_KEY="all";
+    private static int mHistorySize = 10000;
     private static int mConnectionCount = 0;
-    private static Integer mCurrentDatabaseKey = null;
+    private static String mCurrentDatabaseKey;
     private final SearchHistoryDatabase dbHelper;
     private SQLiteDatabase db;
 
@@ -42,10 +42,10 @@ public class SearchHistoryTable {
         addItem(item, mCurrentDatabaseKey);
     }
 
-    public void addItem(SearchItem item, Integer databaseKey) {
+    public void addItem(SearchItem item, String databaseKey) {
         ContentValues values = new ContentValues();
-        if (!checkText(item.get_text().toString())) {
-            values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT, item.get_text().toString());
+        if (!checkText(item)) {
+            values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT, item.text);
             if (databaseKey != null) {
                 values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY, databaseKey);
             }
@@ -55,17 +55,17 @@ public class SearchHistoryTable {
         } else {
             values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID, getLastItemId(databaseKey) + 1);
             open();
-            db.update(SearchHistoryDatabase.SEARCH_HISTORY_TABLE, values, SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID + " = ? ", new String[]{Integer.toString(getItemId(item))});
+            db.update(SearchHistoryDatabase.SEARCH_HISTORY_TABLE, values, SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID + " = ? ", new String[]{Integer.toString(getItemId(item.text))});
             close();
         }
     }
 
-    private int getItemId(SearchItem item) {
+    private int getItemId(String item) {
         open();
         String query = "SELECT " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID +
                 " FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE +
                 " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT + " = ?";
-        Cursor res = db.rawQuery(query, new String[]{item.get_text().toString()});
+        Cursor res = db.rawQuery(query, new String[]{item});
         res.moveToFirst();
         int id = res.getInt(0);
         close();
@@ -73,7 +73,7 @@ public class SearchHistoryTable {
         return id;
     }
 
-    private int getLastItemId(Integer databaseKey) {
+    private int getLastItemId(String databaseKey) {
         open();
         String sql = "SELECT " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID + " FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE;
         if (databaseKey != null)
@@ -86,11 +86,11 @@ public class SearchHistoryTable {
         return count;
     }
 
-    private boolean checkText(String text) {
+    private boolean checkText(SearchItem item) {
         open();
 
         String query = "SELECT * FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE + " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT + " =?";
-        Cursor cursor = db.rawQuery(query, new String[]{text});
+        Cursor cursor = db.rawQuery(query, new String[]{item.text});
 
         boolean hasObject = false;
 
@@ -103,13 +103,13 @@ public class SearchHistoryTable {
         return hasObject;
     }
 
-    public List<SearchItem> getAllItems(Integer databaseKey) {
+    public List<SearchItem> getAllItems(String databaseKey) {
         mCurrentDatabaseKey = databaseKey;
         List<SearchItem> list = new ArrayList<>();
 
         String selectQuery = "SELECT * FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE;
         if (databaseKey != null) {
-            selectQuery += " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY + " = " + databaseKey;
+            selectQuery += " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY + " = '" + databaseKey+"'";
         }
         selectQuery += " ORDER BY " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID + " DESC LIMIT " + mHistorySize;
 
@@ -117,10 +117,7 @@ public class SearchHistoryTable {
         Cursor cursor = db.rawQuery(selectQuery, null);
         if (cursor.moveToFirst()) {
             do {
-                SearchItem item = new SearchItem();
-                item.set_icon(R.drawable.ic_history_black_24dp);
-                item.set_text(cursor.getString(1));
-                list.add(item);
+                list.add(new SearchItem(cursor.getString(1),SearchItem.HISTORY_ITEM));
             } while (cursor.moveToNext());
         }
         cursor.close();

@@ -7,6 +7,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,90 +21,45 @@ import java.util.List;
 import java.util.Locale;
 
 
-@SuppressWarnings({"unused", "WeakerAccess"})
 public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultViewHolder> implements Filterable {
-
-    private final SearchHistoryTable mHistoryDatabase;
-    private List<SearchItem> mSuggestionsList = new ArrayList<>();
-    private String key = "";
-    private List<SearchItem> mResultList = new ArrayList<>();
+    private static final String TAG = "SearchAdapter";
+    private final List<SearchItem> queryList;
+    private final List<SearchItem> historyList;
+    private final List<SearchItem> originalList;
+    private final SearchHistoryTable historyDatabase;
     private List<OnItemClickListener> mItemClickListeners;
-    private Integer mDatabaseKey = null;
+    private String queryKey;
+    private SearchFilter filter;
 
-    // ---------------------------------------------------------------------------------------------
-    public SearchAdapter(Context context) {
-        mHistoryDatabase = new SearchHistoryTable(context);
-        getFilter().filter("");
+    public SearchAdapter(Context context,List<SearchItem> suggestionsList) {
+        this(context,suggestionsList,SearchHistoryTable.DEFAULT_KEY);
     }
 
-    public SearchAdapter(Context context, List<SearchItem> suggestionsList) {
-        mSuggestionsList = suggestionsList;
-        mResultList = suggestionsList;
-        mHistoryDatabase = new SearchHistoryTable(context);// TODO PUT DB IN VIEW
-        getFilter().filter("");
+    public SearchAdapter(Context context, List<SearchItem> items,String key) {
+        queryList =new ArrayList<>();
+        historyList =new ArrayList<>();
+        originalList=new ArrayList<>();
+        historyDatabase = new SearchHistoryTable(context);
+        List<SearchItem> allItems = historyDatabase.getAllItems(key);
+        if (!allItems.isEmpty()) {
+            historyList.addAll(allItems);
+            originalList.addAll(allItems);
+        }
+        if(null!= items) {
+            queryList.addAll(items);
+        }
     }
 
-    // ---------------------------------------------------------------------------------------------
     @Override
-    public Filter getFilter() {
-        return new Filter() {
-            @Override
-            protected FilterResults performFiltering(CharSequence constraint) {
-                FilterResults filterResults = new FilterResults();
+    public SearchFilter getFilter() {
+        if(null==filter) {
+            filter = new SearchFilter();
+        }
+        return filter;
+    }
 
-                if (!TextUtils.isEmpty(constraint)) {
-                    key = constraint.toString().toLowerCase(Locale.getDefault());
-
-                    List<SearchItem> results = new ArrayList<>();
-                    List<SearchItem> history = new ArrayList<>();
-                    List<SearchItem> databaseAllItems = mHistoryDatabase.getAllItems(mDatabaseKey);
-
-                    if (!databaseAllItems.isEmpty()) {
-                        history.addAll(databaseAllItems);
-                    }
-                    history.addAll(mSuggestionsList);
-
-                    for (SearchItem item : history) {
-                        String string = item.get_text().toString().toLowerCase(Locale.getDefault());
-                        if (string.contains(key)) {
-                            results.add(item);
-                        }
-                    }
-
-                    if (results.size() > 0) {
-                        filterResults.values = results;
-                        filterResults.count = results.size();
-                    }
-                } else {
-                    key = "";
-                }
-
-                return filterResults;
-            }
-
-            @Override
-            protected void publishResults(CharSequence constraint, FilterResults results) {
-                List<SearchItem> dataSet = new ArrayList<>();
-
-                if (results.count > 0) {
-                    List<?> result = (ArrayList<?>) results.values;
-                    for (Object object : result) {
-                        if (object instanceof SearchItem) {
-                            dataSet.add((SearchItem) object);
-                        }
-                    }
-                } else {
-                    if (key.isEmpty()) {
-                        List<SearchItem> allItems = mHistoryDatabase.getAllItems(mDatabaseKey);
-                        if (!allItems.isEmpty()) {
-                            dataSet = allItems;
-                        }
-                    }
-                }
-
-                setData(dataSet);
-            }
-        };
+    public void filter(CharSequence text,Runnable completeAction){
+        getFilter().filter(text,completeAction);
     }
 
     @Override
@@ -115,29 +71,32 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
 
     @Override
     public void onBindViewHolder(ResultViewHolder viewHolder, int position) {
-        SearchItem item = mResultList.get(position);
-
-        viewHolder.icon_left.setImageResource(item.get_icon());
+        SearchItem item = originalList.get(position);
+        if(SearchItem.HISTORY_ITEM==item.type) {
+            viewHolder.icon_left.setImageResource(R.drawable.ic_history_black_24dp);
+        } else {
+            viewHolder.icon_left.setImageResource(R.drawable.ic_search_black_24dp);
+        }
         viewHolder.icon_left.setColorFilter(SearchView.getIconColor(), PorterDuff.Mode.SRC_IN);
         viewHolder.text.setTypeface(SearchView.getTextFont());
         viewHolder.text.setTextSize(SearchView.getIconColor());
         viewHolder.text.setTextColor(SearchView.getTextColor());
 
-        String itemText = item.get_text().toString();
+        String itemText = item.text;
         String itemTextLower = itemText.toLowerCase(Locale.getDefault());
 
-        if (itemTextLower.contains(key) && !key.isEmpty()) {
+        if (!TextUtils.isEmpty(queryKey)&&itemTextLower.contains(queryKey) && !queryKey.isEmpty()) {
             SpannableString s = new SpannableString(itemText);
-            s.setSpan(new ForegroundColorSpan(SearchView.getTextHighlightColor()), itemTextLower.indexOf(key), itemTextLower.indexOf(key) + key.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            s.setSpan(new ForegroundColorSpan(SearchView.getTextHighlightColor()), itemTextLower.indexOf(queryKey), itemTextLower.indexOf(queryKey) + queryKey.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             viewHolder.text.setText(s, TextView.BufferType.SPANNABLE);
         } else {
-            viewHolder.text.setText(item.get_text());
+            viewHolder.text.setText(item.text);
         }
     }
 
     @Override
     public int getItemCount() {
-        return mResultList.size();
+        return originalList.size();
     }
 
     @Override
@@ -145,20 +104,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
         return position;
     }
 
-    public List<SearchItem> getSuggestionsList() {
-        return mSuggestionsList;
-    }
-
-    // ---------------------------------------------------------------------------------------------
-    public void setSuggestionsList(List<SearchItem> suggestionsList) {
-        mSuggestionsList = suggestionsList;
-        mResultList = suggestionsList;
-    }
-
-    public void setDatabaseKey(Integer key) {
-        mDatabaseKey = key;
-        getFilter().filter("");
-    }
 
     @Deprecated
     public void setOnItemClickListener(OnItemClickListener mItemClickListener) {
@@ -178,14 +123,16 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
             mItemClickListeners.add(position, listener);
     }
 
-    public void setData(List<SearchItem> data) {
-        if (mResultList.size() == 0) {
-            mResultList = data;
+    public void swapItems(List<SearchItem> data) {
+        if(null==data) return;
+        if (queryList.isEmpty()) {
+            queryList.addAll(data);
             notifyDataSetChanged();
         } else {
-            int previousSize = mResultList.size();
+            int previousSize = queryList.size();
             int nextSize = data.size();
-            mResultList = data;
+            queryList.clear();
+            queryList.addAll(data);
             if (previousSize == nextSize && nextSize != 0)
                 notifyItemRangeChanged(0, previousSize);
             else if (previousSize > nextSize) {
@@ -201,6 +148,8 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
             }
         }
     }
+
+
 
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
@@ -226,5 +175,63 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
             }
         }
     }
+
+    class SearchFilter extends Filter {
+        private Runnable completeAction;
+
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+            FilterResults filterResults = new FilterResults();
+            queryKey=!TextUtils.isEmpty(constraint)?constraint.toString().toLowerCase(Locale.getDefault()):"";
+            if (!TextUtils.isEmpty(queryKey)) {
+                List<SearchItem> resultItems=new ArrayList<>();
+                resultItems.addAll(queryItems(historyList,queryKey));
+                resultItems.addAll(queryItems(queryList,queryKey));
+                filterResults.count=resultItems.size();
+                filterResults.values=resultItems;
+            }
+            return filterResults;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            if(!TextUtils.isEmpty(constraint)) {
+                originalList.clear();
+                if(null!=results.values) {
+                    List<SearchItem> resultItems= (List<SearchItem>) results.values;
+                    originalList.addAll(resultItems);
+                }
+                notifyItemRangeInserted(0,getItemCount());
+            } else {
+                //展示所有
+                originalList.clear();
+                originalList.addAll(historyList);
+                notifyItemRangeInserted(0,getItemCount());
+            }
+            Log.e(TAG,"publishResults:"+getItemCount());
+            if(null!=completeAction){
+                completeAction.run();
+            }
+        }
+
+        private List<SearchItem> queryItems(List<SearchItem> items,String key) {
+            List<SearchItem> resultItems=new ArrayList<>();
+            if(null!=items) {
+                for (SearchItem item : items) {
+                    if(!TextUtils.isEmpty(item.text)) {
+                        if (item.text.toLowerCase(Locale.getDefault()).contains(key)) {
+                            resultItems.add(item);
+                        }
+                    }
+                }
+            }
+            return resultItems;
+        }
+
+        public void filter(CharSequence text,Runnable completeAction){
+            super.filter(text);
+            this.completeAction=completeAction;
+        }
+    };
 
 }

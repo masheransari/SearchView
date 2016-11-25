@@ -2,55 +2,23 @@ package quant.searchview.library;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.text.TextUtils;
 
-
-@SuppressWarnings("WeakerAccess")
+/**
+ * Created by cz on 11/25/16.
+ */
 public class SearchItem implements Parcelable {
+    public static final int HISTORY_ITEM=0;
+    public static final int QUERY_ITEM=1;
+    public final String text;
+    public final int type;
 
-    public static final Creator<SearchItem> CREATOR = new Creator<SearchItem>() {
-        public SearchItem createFromParcel(Parcel source) {
-            return new SearchItem(source);
-        }
-
-        public SearchItem[] newArray(int size) {
-            return new SearchItem[size];
-        }
-    };
-    private int icon;
-    private CharSequence text;
-
-    public SearchItem() {
+    public SearchItem(String text) {
+        this(text,QUERY_ITEM);
     }
 
-    public SearchItem(CharSequence text) {
-        this(R.drawable.ic_search_black_24dp, text);
-    }
-
-    public SearchItem(int icon, CharSequence text) {
-        this.icon = icon;
+    public SearchItem(String text, int type) {
         this.text = text;
-    }
-
-    public SearchItem(Parcel in) {
-        this.icon = in.readInt();
-        this.text = in.readParcelable(CharSequence.class.getClassLoader());
-    }
-
-    public int get_icon() {
-        return this.icon;
-    }
-
-    public void set_icon(int icon) {
-        this.icon = icon;
-    }
-
-    public CharSequence get_text() {
-        return this.text;
-    }
-
-    public void set_text(CharSequence text) {
-        this.text = text;
+        this.type = type;
     }
 
     @Override
@@ -60,8 +28,25 @@ public class SearchItem implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeInt(this.icon);
-        TextUtils.writeToParcel(this.text, dest, flags); // dest.writeValue(this.text);
+        dest.writeString(this.text);
+        dest.writeInt(this.type);
     }
+
+    protected SearchItem(Parcel in) {
+        this.text = in.readString();
+        this.type = in.readInt();
+    }
+
+    public static final Parcelable.Creator<SearchItem> CREATOR = new Parcelable.Creator<SearchItem>() {
+        @Override
+        public SearchItem createFromParcel(Parcel source) {
+            return new SearchItem(source);
+        }
+
+        @Override
+        public SearchItem[] newArray(int size) {
+            return new SearchItem[size];
+        }
+    };
 
 }
