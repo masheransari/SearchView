@@ -7,7 +7,6 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,7 +27,8 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
     private final List<SearchItem> originalList;
     private final SearchHistoryTable historyDatabase;
     private List<OnItemClickListener> mItemClickListeners;
-    private String queryKey;
+    public final String searchKey;
+    private String queryWord;
     private SearchFilter filter;
 
     public SearchAdapter(Context context,List<SearchItem> suggestionsList) {
@@ -36,6 +36,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
     }
 
     public SearchAdapter(Context context, List<SearchItem> items,String key) {
+        searchKey=key;
         queryList =new ArrayList<>();
         historyList =new ArrayList<>();
         originalList=new ArrayList<>();
@@ -58,8 +59,8 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
         return filter;
     }
 
-    public void filter(CharSequence text,Runnable completeAction){
-        getFilter().filter(text,completeAction);
+    public void filter(CharSequence text,Runnable action){
+        getFilter().filter(text,action);
     }
 
     @Override
@@ -85,9 +86,9 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
         String itemText = item.text;
         String itemTextLower = itemText.toLowerCase(Locale.getDefault());
 
-        if (!TextUtils.isEmpty(queryKey)&&itemTextLower.contains(queryKey) && !queryKey.isEmpty()) {
+        if (!TextUtils.isEmpty(queryWord)&&itemTextLower.contains(queryWord) && !queryWord.isEmpty()) {
             SpannableString s = new SpannableString(itemText);
-            s.setSpan(new ForegroundColorSpan(SearchView.getTextHighlightColor()), itemTextLower.indexOf(queryKey), itemTextLower.indexOf(queryKey) + queryKey.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            s.setSpan(new ForegroundColorSpan(SearchView.getTextHighlightColor()), itemTextLower.indexOf(queryWord), itemTextLower.indexOf(queryWord) + queryWord.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             viewHolder.text.setText(s, TextView.BufferType.SPANNABLE);
         } else {
             viewHolder.text.setText(item.text);
@@ -105,57 +106,115 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
     }
 
 
-    @Deprecated
-    public void setOnItemClickListener(OnItemClickListener mItemClickListener) {
-        addOnItemClickListener(mItemClickListener);
-    }
-
     public void addOnItemClickListener(OnItemClickListener listener) {
-        addOnItemClickListener(listener, null);
-    }
-
-    private void addOnItemClickListener(OnItemClickListener listener, Integer position) {
         if (mItemClickListeners == null)
             mItemClickListeners = new ArrayList<>();
-        if (position == null)
-            mItemClickListeners.add(listener);
         else
-            mItemClickListeners.add(position, listener);
+            mItemClickListeners.add(listener);
     }
 
-    public void swapItems(List<SearchItem> data) {
-        if(null==data) return;
-        if (queryList.isEmpty()) {
-            queryList.addAll(data);
-            notifyDataSetChanged();
-        } else {
-            int previousSize = queryList.size();
-            int nextSize = data.size();
-            queryList.clear();
-            queryList.addAll(data);
-            if (previousSize == nextSize && nextSize != 0)
-                notifyItemRangeChanged(0, previousSize);
-            else if (previousSize > nextSize) {
-                if (nextSize == 0)
-                    notifyItemRangeRemoved(0, previousSize);
-                else {
-                    notifyItemRangeChanged(0, nextSize);
-                    notifyItemRangeRemoved(nextSize - 1, previousSize);
-                }
-            } else {
-                notifyItemRangeChanged(0, previousSize);
-                notifyItemRangeInserted(previousSize, nextSize - previousSize);
-            }
-        }
+    public void swapItems(List<SearchItem> newItems,String word) {
+        getFilter().publishItems(word,newItems);
     }
 
+    public SearchItem getItem(int position) {
+        return this.originalList.get(position);
+    }
+
+    public void insertHistoryItem(SearchItem item){
+        historyList.remove(item);
+        SearchItem newItem=new SearchItem(item.text,SearchItem.HISTORY_ITEM);
+        historyList.add(0,newItem);
+        historyDatabase.addItem(newItem,searchKey);
+        updateHistoryItems();
+    }
+
+    private void updateHistoryItems(){
+        originalList.clear();
+        originalList.addAll(historyList);
+        notifyItemRangeInserted(0,getItemCount());
+    }
 
 
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
     }
 
-    public class ResultViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    private List<SearchItem> queryItems(List<SearchItem> items,CharSequence key) {
+        List<SearchItem> resultItems=new ArrayList<>();
+        if(null!=items) {
+            for (SearchItem item : items) {
+                if(!TextUtils.isEmpty(item.text)) {
+                    if (TextUtils.isEmpty(key)||item.text.toLowerCase(Locale.getDefault()).contains(key.toString())) {
+                        resultItems.add(item);
+                    }
+                }
+            }
+        }
+        return resultItems;
+    }
+
+    class SearchFilter  extends Filter{
+        private Runnable completeAction;
+
+        @Override
+        protected FilterResults performFiltering(CharSequence word) {
+            FilterResults filterResults=new FilterResults();
+            List<SearchItem> resultItems=new ArrayList<>();
+            resultItems.addAll(queryItems(historyList, word));
+            if (!TextUtils.isEmpty(word)) {
+                resultItems.addAll(queryItems(queryList, word));
+            }
+            filterResults.count=resultItems.size();
+            filterResults.values=resultItems;
+            return filterResults;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            publishItems(constraint, (List<SearchItem>) results.values);
+            if(null!=completeAction) {
+                completeAction.run();
+                completeAction=null;
+            }
+        }
+
+        private void publishItems(CharSequence constraint, List<SearchItem> resultItems) {
+            queryWord=!TextUtils.isEmpty(constraint)?constraint.toString():null;
+            if(!TextUtils.isEmpty(constraint)) {
+                int previousSize=originalList.size();
+                if(null!=resultItems) {
+                    originalList.clear();
+                    int nextSize = resultItems.size();
+                    originalList.addAll(resultItems);
+                    if (previousSize == nextSize && nextSize != 0)
+                        notifyItemRangeChanged(0, previousSize);
+                    else if (previousSize > nextSize) {
+                        if (nextSize == 0)
+                            notifyItemRangeRemoved(0, previousSize);
+                        else {
+                            notifyItemRangeChanged(0, nextSize);
+                            notifyItemRangeRemoved(nextSize, previousSize-nextSize);
+                        }
+                    } else {
+                        notifyItemRangeChanged(0, previousSize);
+                        notifyItemRangeInserted(previousSize, nextSize - previousSize);
+                    }
+                }
+            } else {
+                //展示所有
+                updateHistoryItems();
+            }
+        }
+
+        public void filter(CharSequence text,Runnable completeAction){
+            super.filter(text);
+            this.completeAction=completeAction;
+        }
+    }
+
+
+    public class ResultViewHolder extends RecyclerView.ViewHolder {
 
         final ImageView icon_left;
         final TextView text;
@@ -164,74 +223,17 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
             super(view);
             icon_left = (ImageView) view.findViewById(R.id.imageView_item_icon_left);
             text = (TextView) view.findViewById(R.id.textView_item_text);
-            view.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View v) {
-            if (mItemClickListeners != null) {
-                for (OnItemClickListener listener : mItemClickListeners)
-                    listener.onItemClick(v, getLayoutPosition());
-            }
-        }
-    }
-
-    class SearchFilter extends Filter {
-        private Runnable completeAction;
-
-        @Override
-        protected FilterResults performFiltering(CharSequence constraint) {
-            FilterResults filterResults = new FilterResults();
-            queryKey=!TextUtils.isEmpty(constraint)?constraint.toString().toLowerCase(Locale.getDefault()):"";
-            if (!TextUtils.isEmpty(queryKey)) {
-                List<SearchItem> resultItems=new ArrayList<>();
-                resultItems.addAll(queryItems(historyList,queryKey));
-                resultItems.addAll(queryItems(queryList,queryKey));
-                filterResults.count=resultItems.size();
-                filterResults.values=resultItems;
-            }
-            return filterResults;
-        }
-
-        @Override
-        protected void publishResults(CharSequence constraint, FilterResults results) {
-            if(!TextUtils.isEmpty(constraint)) {
-                originalList.clear();
-                if(null!=results.values) {
-                    List<SearchItem> resultItems= (List<SearchItem>) results.values;
-                    originalList.addAll(resultItems);
-                }
-                notifyItemRangeInserted(0,getItemCount());
-            } else {
-                //展示所有
-                originalList.clear();
-                originalList.addAll(historyList);
-                notifyItemRangeInserted(0,getItemCount());
-            }
-            Log.e(TAG,"publishResults:"+getItemCount());
-            if(null!=completeAction){
-                completeAction.run();
-            }
-        }
-
-        private List<SearchItem> queryItems(List<SearchItem> items,String key) {
-            List<SearchItem> resultItems=new ArrayList<>();
-            if(null!=items) {
-                for (SearchItem item : items) {
-                    if(!TextUtils.isEmpty(item.text)) {
-                        if (item.text.toLowerCase(Locale.getDefault()).contains(key)) {
-                            resultItems.add(item);
-                        }
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mItemClickListeners != null) {
+                        for (OnItemClickListener listener : mItemClickListeners)
+                            listener.onItemClick(v, getLayoutPosition());
                     }
                 }
-            }
-            return resultItems;
+            });
         }
 
-        public void filter(CharSequence text,Runnable completeAction){
-            super.filter(text);
-            this.completeAction=completeAction;
-        }
-    };
+    }
 
 }

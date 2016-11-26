@@ -44,28 +44,27 @@ public class SearchHistoryTable {
 
     public void addItem(SearchItem item, String databaseKey) {
         ContentValues values = new ContentValues();
-        if (!checkText(item)) {
+        if (!checkText(item,databaseKey)) {
             values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT, item.text);
-            if (databaseKey != null) {
-                values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY, databaseKey);
-            }
+            values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY, databaseKey);
+            values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_CT, item.ct);
             open();
             db.insert(SearchHistoryDatabase.SEARCH_HISTORY_TABLE, null, values);
             close();
         } else {
-            values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID, getLastItemId(databaseKey) + 1);
+            values.put(SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_CT, System.currentTimeMillis());
             open();
-            db.update(SearchHistoryDatabase.SEARCH_HISTORY_TABLE, values, SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID + " = ? ", new String[]{Integer.toString(getItemId(item.text))});
+            db.update(SearchHistoryDatabase.SEARCH_HISTORY_TABLE, values, SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID + " = ? ", new String[]{String.valueOf(getItemId(item.text,databaseKey))});
             close();
         }
     }
 
-    private int getItemId(String item) {
+    private int getItemId(String item,String key) {
         open();
         String query = "SELECT " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID +
                 " FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE +
-                " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT + " = ?";
-        Cursor res = db.rawQuery(query, new String[]{item});
+                " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT + " = ? and "+SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY+"=? ";
+        Cursor res = db.rawQuery(query, new String[]{item,key});
         res.moveToFirst();
         int id = res.getInt(0);
         close();
@@ -77,8 +76,8 @@ public class SearchHistoryTable {
         open();
         String sql = "SELECT " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID + " FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE;
         if (databaseKey != null)
-            sql += " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY + " = " + databaseKey;
-        Cursor res = db.rawQuery(sql, null);
+            sql += " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY + " = ?";
+        Cursor res = db.rawQuery(sql, new String[]{ databaseKey});
         res.moveToLast();
         int count = res.getInt(0);
         close();
@@ -86,19 +85,19 @@ public class SearchHistoryTable {
         return count;
     }
 
-    private boolean checkText(SearchItem item) {
+    private boolean checkText(SearchItem item,String key) {
         open();
-
-        String query = "SELECT * FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE + " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT + " =?";
-        Cursor cursor = db.rawQuery(query, new String[]{item.text});
-
+        String query = "SELECT * FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE + " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_TEXT + " =? and "+SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY+"=? ";
+        Cursor cursor = null;
         boolean hasObject = false;
-
-        if (cursor.moveToFirst()) {
-            hasObject = true;
+        try{
+            cursor=db.rawQuery(query, new String[]{item.text,key});
+            hasObject=cursor.moveToFirst();
+        } finally {
+            if(null!=cursor){
+                cursor.close();
+            }
         }
-
-        cursor.close();
         close();
         return hasObject;
     }
@@ -107,10 +106,7 @@ public class SearchHistoryTable {
         mCurrentDatabaseKey = databaseKey;
         List<SearchItem> list = new ArrayList<>();
 
-        String selectQuery = "SELECT * FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE;
-        if (databaseKey != null) {
-            selectQuery += " WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY + " = '" + databaseKey+"'";
-        }
+        String selectQuery = "SELECT * FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE+" WHERE " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY + " = '" + databaseKey+"'";
         selectQuery += " ORDER BY " + SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_ID + " DESC LIMIT " + mHistorySize;
 
         open();
@@ -133,20 +129,16 @@ public class SearchHistoryTable {
         clearDatabase(null);
     }
 
-    public void clearDatabase(Integer key) {
+    public void clearDatabase(String key) {
         open();
-        if (key == null) {
-            db.delete(SearchHistoryDatabase.SEARCH_HISTORY_TABLE, null, null);
-        } else {
-            db.delete(SearchHistoryDatabase.SEARCH_HISTORY_TABLE, SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY + " = ?", new String[]{String.valueOf(key)});
-        }
+        db.delete(SearchHistoryDatabase.SEARCH_HISTORY_TABLE, SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY + " = ?", new String[]{String.valueOf(key)});
         close();
     }
 
-    public int getItemsCount() {
+    public int getItemsCount(String key) {
         open();
-        String countQuery = "SELECT * FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE;
-        Cursor cursor = db.rawQuery(countQuery, null);
+        String countQuery = "SELECT * FROM " + SearchHistoryDatabase.SEARCH_HISTORY_TABLE+" where "+SearchHistoryDatabase.SEARCH_HISTORY_COLUMN_KEY+"=?";
+        Cursor cursor = db.rawQuery(countQuery, new String[]{key});
         int count = cursor.getCount();
         cursor.close();
         close();

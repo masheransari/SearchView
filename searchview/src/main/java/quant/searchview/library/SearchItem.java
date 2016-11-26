@@ -11,6 +11,7 @@ public class SearchItem implements Parcelable {
     public static final int QUERY_ITEM=1;
     public final String text;
     public final int type;
+    public long ct;
 
     public SearchItem(String text) {
         this(text,QUERY_ITEM);
@@ -19,6 +20,15 @@ public class SearchItem implements Parcelable {
     public SearchItem(String text, int type) {
         this.text = text;
         this.type = type;
+        this.ct=System.currentTimeMillis();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SearchItem that = (SearchItem) o;
+        return text.equals(that.text);
     }
 
     @Override
@@ -30,14 +40,16 @@ public class SearchItem implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(this.text);
         dest.writeInt(this.type);
+        dest.writeLong(this.ct);
     }
 
     protected SearchItem(Parcel in) {
         this.text = in.readString();
         this.type = in.readInt();
+        this.ct = in.readLong();
     }
 
-    public static final Parcelable.Creator<SearchItem> CREATOR = new Parcelable.Creator<SearchItem>() {
+    public static final Creator<SearchItem> CREATOR = new Creator<SearchItem>() {
         @Override
         public SearchItem createFromParcel(Parcel source) {
             return new SearchItem(source);
@@ -48,5 +60,4 @@ public class SearchItem implements Parcelable {
             return new SearchItem[size];
         }
     };
-
 }

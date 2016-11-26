@@ -1,12 +1,12 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-
+        <item name="android:listDivider">@color/colorPrimaryDark</item>
         <item name="SearchViewAttr">@style/MyDefaultSearchStyle</item>
     </style>
 
@@ -15,7 +15,7 @@
         <item name="search_layout_margin">8dp</item>
         <item name="search_icon_color">@color/search_light_icon</item>
         <item name="search_text_color">@color/search_light_text</item>
-        <item name="search_text_highlight_color">@color/search_light_text_highlight</item>
+        <item name="search_text_highlight_color">@color/colorPrimaryDark</item>
         <item name="search_text_size">@dimen/search_text_medium</item>
         <item name="search_hint_color">@color/search_light_hint</item>
         <item name="search_animation_duration">300</item>
@@ -23,7 +23,8 @@
         <item name="search_clear_on_open">false</item>
         <item name="search_clear_on_close">true</item>
         <item name="search_hide_on_keyboard_close">true</item>
-        <item name="search_backgroundCorners" >3dp</item>
+        <item name="search_backgroundCorners" >6dp</item>
         <item name="search_backgroundColor" >@color/white</item>
+        <item name="search_underDividerDrawable">@color/colorPrimaryDark</item>
     </style>
 </resources>

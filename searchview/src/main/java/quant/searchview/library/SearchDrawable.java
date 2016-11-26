@@ -38,7 +38,7 @@ public class SearchDrawable extends Drawable{
     public @interface State {
     }
 
-    protected float pro = -1;
+    protected float pro;
     protected float[] pos = new float[2];
     private float cx, cy, cr, scr, scx, scy;
     private final RectF rectF, outRectF;
@@ -51,7 +51,7 @@ public class SearchDrawable extends Drawable{
         paint.setColor(Color.WHITE);
         paint.setStrokeCap(Paint.Cap.ROUND);
         paint.setStyle(Paint.Style.STROKE);
-
+        pro=1;
         rectF = new RectF();
         outRectF = new RectF();
     }
@@ -108,17 +108,10 @@ public class SearchDrawable extends Drawable{
     }
 
     public ValueAnimator startSearchViewAnim() {
-        ValueAnimator valueAnimator = startSearchViewAnim(DEFAULT_ANIM_STARTF, DEFAULT_ANIM_ENDF,
-                DEFAULT_ANIM_TIME);
-        return valueAnimator;
+        return startSearchViewAnim(DEFAULT_ANIM_STARTF, DEFAULT_ANIM_ENDF, DEFAULT_ANIM_TIME);
     }
 
     public ValueAnimator startSearchViewAnim(float startF, float endF, long time) {
-        ValueAnimator valueAnimator =startSearchViewAnim(startF, endF, time, null);
-        return valueAnimator;
-    }
-
-    public ValueAnimator startSearchViewAnim(float startF, float endF, long time, final PathMeasure pathMeasure) {
         ValueAnimator valueAnimator = ValueAnimator.ofFloat(startF, endF);
         valueAnimator.setDuration(time);
         valueAnimator.setInterpolator(new LinearInterpolator());
@@ -126,9 +119,6 @@ public class SearchDrawable extends Drawable{
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                 pro = (float) valueAnimator.getAnimatedValue();
-                if (null != pathMeasure){
-                    pathMeasure.getPosTan(pro, pos, null);
-                }
                 invalidateSelf();
             }
         });
@@ -145,6 +135,7 @@ public class SearchDrawable extends Drawable{
         return valueAnimator;
     }
 
+
     private void drawStopAnimView(Paint paint, Canvas canvas) {
         canvas.save();
         if (pro <= 0.75) {
@@ -160,7 +151,7 @@ public class SearchDrawable extends Drawable{
         } else if (pro > 0.5f && pro < 0.75f) {
             canvas.drawLine(cx - cr * (pro - 0.5f) * 4, scy - scr, scx - 20, scy - scr, paint);
         } else {
-            canvas.drawLine(cx - cr, scy - scr, scx - 20, scy - scr, paint);
+            canvas.drawLine(cx - cr, scy - scr, scx - 10, scy - scr, paint);
             canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * pro, scy - scr - scr * pro, paint);
             canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * pro, scy - scr + scr * pro, paint);
         }
@@ -189,10 +180,13 @@ public class SearchDrawable extends Drawable{
     }
 
     private void drawNormalView(Paint paint, Canvas canvas) {
-        canvas.save();
-        canvas.drawCircle(cx, cy, cr, paint);
-        canvas.drawLine(cx + cr * sign, cy + cr * sign, scx, cy + cr * 2 * sign, paint);
-        canvas.restore();
+//        canvas.save();
+//        canvas.drawCircle(cx, cy, cr, paint);
+//        canvas.drawLine(cx + cr * sign, cy + cr * sign, scx, cy + cr * 2 * sign, paint);
+//        canvas.restore();
+        canvas.drawLine(cx - cr, scy - scr, scx - 10, scy - scr, paint);
+        canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * pro, scy - scr - scr * pro, paint);
+        canvas.drawLine(cx - cr, scy - scr, cx - cr + scr * pro, scy - scr + scr * pro, paint);
     }
 
     public void startAnim() {

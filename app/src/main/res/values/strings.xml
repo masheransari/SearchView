@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SearchView</string>
+    <string name="local_search">本地数据检索</string>
 </resources>

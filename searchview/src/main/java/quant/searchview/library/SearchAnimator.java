@@ -12,7 +12,7 @@ class SearchAnimator {
         Animation anim = new AlphaAnimation(0.0f, 1.0f);
         anim.setInterpolator(new AccelerateDecelerateInterpolator());
         anim.setDuration(duration);
-
+        view.clearAnimation();
         view.setAnimation(anim);
         view.setVisibility(View.VISIBLE);
     }
@@ -21,7 +21,7 @@ class SearchAnimator {
         Animation anim = new AlphaAnimation(1.0f, 0.0f);
         anim.setInterpolator(new AccelerateDecelerateInterpolator());
         anim.setDuration(duration);
-
+        view.clearAnimation();
         view.setAnimation(anim);
         view.setVisibility(View.GONE);
     }

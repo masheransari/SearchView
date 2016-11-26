@@ -9,6 +9,7 @@ import android.graphics.ColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Parcel;
@@ -39,7 +40,7 @@ import android.widget.TextView;
 
 import java.lang.reflect.Field;
 
-public class SearchView extends FrameLayout implements View.OnClickListener {
+public class SearchView extends FrameLayout implements View.OnClickListener,TextWatcher {
 
     private static final String TAG = "SearchView";
     private static int mIconColor = Color.BLACK;
@@ -61,7 +62,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
     private ImageView mBackImageView;
     private ImageView mEmptyImageView;
     private LinearLayout mLinearLayout;
-    private CharSequence mOldQueryText;
+    private SearchDivider searchDivider;
     private int backGroundColor;
     private int backgroundCorners;
     private int mAnimationDuration;
@@ -71,6 +72,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
     private boolean mShouldClearOnOpen = false;
     private boolean mShouldClearOnClose = false;
     private boolean mShouldHideOnKeyboardClose = true;
+    private boolean filterLocal;
 
     // ---------------------------------------------------------------------------------------------
     public SearchView(Context context) {
@@ -129,6 +131,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
         container = (LinearLayout) findViewById(R.id.search_container);
 
         // TODO
+        searchDivider=new SearchDivider(context);
         mRecyclerView = (RecyclerView) findViewById(R.id.recyclerView_result);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(context));
         mRecyclerView.setNestedScrollingEnabled(false);
@@ -172,6 +175,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                mEmptyImageView.setVisibility(TextUtils.isEmpty(charSequence)?View.GONE:View.VISIBLE);
                 onQueryText(charSequence);
             }
 
@@ -188,11 +192,9 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
         });
         mSearchEditText.clearFocus();
         mSearchEditText.setOnFocusChangeListener(new OnFocusChangeListener() {
-            public static final String TAG = "OnFocusChangeListener";
-
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
-                Log.e(TAG,"OnFocusChangeListener:"+hasFocus);
+                Log.e(TAG,"onFocusChange:"+hasFocus);
                 if (hasFocus) {
                     addFocus();
                 } else {
@@ -218,16 +220,17 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
         setTextSize(attr.getDimensionPixelSize(R.styleable.SearchView_search_text_size,0));
         setHint(attr.getString(R.styleable.SearchView_search_hint));
         setHintColor(attr.getColor(R.styleable.SearchView_search_hint_color, 0));
-        setDivider(attr.getBoolean(R.styleable.SearchView_search_divider, true));
+        setListDivider(attr.getBoolean(R.styleable.SearchView_search_listDivider,true));
+        setUnderDividerDrawable(attr.getDrawable(R.styleable.SearchView_search_underDividerDrawable));
         setAnimationDuration(attr.getInteger(R.styleable.SearchView_search_animation_duration, 0));
         setShadowColor(attr.getColor(R.styleable.SearchView_search_shadow_color, 0));
         setShouldClearOnOpen(attr.getBoolean(R.styleable.SearchView_search_clear_on_open, false));
         setShouldClearOnClose(attr.getBoolean(R.styleable.SearchView_search_clear_on_close, true));
         setShouldHideOnKeyboardClose(attr.getBoolean(R.styleable.SearchView_search_hide_on_keyboard_close, true));
         setCursorDrawable(attr.getResourceId(R.styleable.SearchView_search_cursor_drawable, 0));
+        setFilterLocal(attr.getBoolean(R.styleable.SearchView_search_filter_local,false));
         attr.recycle();
     }
-
 
     private void setSearchBackgroundColor(int color) {
         this.backGroundColor=color;
@@ -241,7 +244,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
         setBackgroundCompat(mRecyclerView,getGradientDrawable(0, 0, backgroundCorners, backgroundCorners, backGroundColor));
     }
 
-    private void setBackgroundCompat(View view,GradientDrawable drawable) {
+    private void setBackgroundCompat(View view,Drawable drawable) {
         if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.JELLY_BEAN){
             view.setBackground(drawable);
         } else {
@@ -320,9 +323,25 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
         return mRecyclerView.getAdapter();
     }
 
-    public void setAdapter(SearchAdapter adapter) {
-        mAdapter = adapter;
-        mRecyclerView.setAdapter(mAdapter);
+    public void setUnderDividerDrawable(Drawable drawable) {
+        if(null!=drawable){
+            setBackgroundCompat(mDividerView,drawable);
+        }
+    }
+
+    private void setFilterLocal(boolean filterLocal) {
+        this.filterLocal=filterLocal;
+    }
+
+    public void setAdapter(final SearchAdapter adapter) {
+        mRecyclerView.setAdapter(mAdapter = adapter);
+        adapter.addOnItemClickListener(new SearchAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(View view, int position) {
+                mAdapter.insertHistoryItem(adapter.getItem(position));
+                close(false);
+            }
+        });
     }
 
     public boolean getShouldClearOnClose() {
@@ -361,7 +380,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT
         );
-        params.setMargins(value,value,value,0);
+        params.setMargins(value,value,value,value);
         container.setLayoutParams(params);
     }
 
@@ -374,11 +393,11 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
         mSearchEditText.setHintTextColor(color);
     }
 
-    public void setDivider(boolean divider) {
+    public void setListDivider(boolean divider) {
         if (divider) {
-            mRecyclerView.addItemDecoration(new SearchDivider(getContext()));
+            mRecyclerView.addItemDecoration(searchDivider);
         } else {
-            mRecyclerView.removeItemDecoration(new SearchDivider(getContext()));
+            mRecyclerView.removeItemDecoration(searchDivider);
         }
     }
 
@@ -414,22 +433,28 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
     // ---------------------------------------------------------------------------------------------
     public void showSuggestions() {
         if (mAdapter != null && mAdapter.getItemCount() > 0) { // ||
-            Log.e(TAG,"itemCount:"+mAdapter.getItemCount());
-            mDividerView.setVisibility(View.VISIBLE);
-            mRecyclerView.setVisibility(View.VISIBLE);
-            SearchAnimator.fadeIn(mRecyclerView, mAnimationDuration);
+            if(View.GONE==mRecyclerView.getVisibility()){
+                mDividerView.setVisibility(View.VISIBLE);
+                SearchAnimator.fadeIn(mRecyclerView, mAnimationDuration);
+            } else {
+                mRecyclerView.requestLayout();
+            }
             setBackgroundCompat(mLinearLayout,getGradientDrawable(backgroundCorners, backgroundCorners, 0, 0, backGroundColor));
+            Log.e(TAG,"showSuggestions-setBackgroundCompat");
         } else {
+            mDividerView.setVisibility(View.GONE);
+            SearchAnimator.fadeOut(mRecyclerView, mAnimationDuration);
             setBackgroundCompat(mLinearLayout,getGradientDrawable(backgroundCorners, backgroundCorners, backgroundCorners, backgroundCorners, backGroundColor));
         }
     }
 
     public void hideSuggestions() {
+        Log.e(TAG,"hideSuggestions");
         if (mAdapter != null) {
             mDividerView.setVisibility(View.GONE);
-            mRecyclerView.setVisibility(View.GONE);
             SearchAnimator.fadeOut(mRecyclerView, mAnimationDuration);
             setBackgroundCompat(mLinearLayout,getGradientDrawable(backgroundCorners, backgroundCorners, backgroundCorners, backgroundCorners, backGroundColor));
+            Log.e(TAG,"hideSuggestions-setBackgroundCompat");
         }
     }
 
@@ -477,9 +502,6 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
         } else {
             setHamburger();
         }
-        if(View.GONE==mShadowView.getVisibility()){
-            mShadowView.setVisibility(View.VISIBLE);
-        }
         SearchAnimator.fadeOut(mShadowView, mAnimationDuration);
         postDelayed(new Runnable() {
             @Override
@@ -526,30 +548,22 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
 
     // ---------------------------------------------------------------------------------------------
     private void onQueryText(final CharSequence newText) {
-        Runnable completeAction=new Runnable() {
+        Runnable filterCompleteAction=new Runnable() {
             @Override
             public void run() {
-                if (!TextUtils.isEmpty(newText)) {
-                    showSuggestions();
-                    mEmptyImageView.setVisibility(View.VISIBLE);
-                } else {
-                    hideSuggestions();
-                    mEmptyImageView.setVisibility(View.GONE);
-                }
-
-                if (mOnQueryChangeListener != null && !TextUtils.equals(newText, mOldQueryText)) {
+                if (mOnQueryChangeListener != null && !TextUtils.isEmpty(newText)) {
                     mOnQueryChangeListener.onQueryTextChange(newText.toString());
+                }else if(null!=mAdapter){
+                    mAdapter.filter(null,null);
                 }
-                mOldQueryText = newText.toString();
-                Log.e(TAG,"onQueryText:"+mAdapter.getItemCount());
+                showSuggestions();
             }
         };
-        if (mAdapter != null && mAdapter instanceof Filterable) {
-            mAdapter.filter(newText,completeAction);
+        if (filterLocal&&null!=mAdapter) {
+            mAdapter.filter(newText,filterCompleteAction);
         } else {
-            completeAction.run();
+            filterCompleteAction.run();
         }
-
     }
 
     private void setQueryWithoutSubmitting(CharSequence query) {
@@ -583,9 +597,10 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
 
     private void onSubmitQuery() {
         CharSequence query = mSearchEditText.getText();
-        if (query != null && TextUtils.getTrimmedLength(query) > 0) {
-            if (mOnQueryChangeListener == null || !mOnQueryChangeListener.onQueryTextSubmit(query.toString())) {
-                mSearchEditText.setText(query);
+        if (mOnQueryChangeListener == null || mOnQueryChangeListener.onQueryTextSubmit(query.toString())) {
+            if (!TextUtils.isEmpty(query) && TextUtils.getTrimmedLength(query) > 0) {
+                mAdapter.insertHistoryItem(new SearchItem(query.toString(),SearchItem.HISTORY_ITEM));
+                close(true);
             }
         }
     }
@@ -648,12 +663,25 @@ public class SearchView extends FrameLayout implements View.OnClickListener {
         mOnMenuClickListener = listener;
     }
 
+    @Override
+    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+    }
+
+    @Override
+    public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+    }
+
+    @Override
+    public void afterTextChanged(Editable s) {
+    }
+
     // ---------------------------------------------------------------------------------------------
     @SuppressWarnings({"UnusedReturnValue", "SameReturnValue", "UnusedParameters"})
     public interface OnQueryTextListener {
         boolean onQueryTextSubmit(String query);
 
-        boolean onQueryTextChange(String newText);
+        void onQueryTextChange(String newText);
     }
 
     @SuppressWarnings({"UnusedReturnValue", "SameReturnValue"})
