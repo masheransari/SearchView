@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import quant.searchview.library.db.SearchHistoryTable;
+
 
 public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultViewHolder> implements Filterable {
     private static final String TAG = "SearchAdapter";
@@ -61,6 +63,10 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
 
     public void filter(CharSequence text,Runnable action){
         getFilter().filter(text,action);
+    }
+
+    public void setHistorySize(int historySize) {
+        historyDatabase.setHistorySize(historySize);
     }
 
     @Override

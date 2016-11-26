@@ -36,6 +36,7 @@ public class LocalSearchActivity extends AppCompatActivity {
             suggestionsList.add(new SearchItem(ITEMS[i]));
         }
         final SearchAdapter searchAdapter = new SearchAdapter(this, suggestionsList,LOCAL_KEY);
+        searchAdapter.setHistorySize(100);//设置历史条目最多展示个数,默认为5个,以最新使用为主
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {

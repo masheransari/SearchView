@@ -24,8 +24,16 @@ public class SearchDivider extends RecyclerView.ItemDecoration {
 
     private void setDivider(Drawable divider) {
         this.divider = divider;
-        this.dividerHeight = divider == null ? 0 : divider.getIntrinsicHeight();
-        this.dividerWidth = divider == null ? 0 : divider.getIntrinsicWidth();
+        if(null==divider||0>divider.getIntrinsicHeight()){
+            this.dividerHeight=1;
+        } else {
+            this.dividerHeight = divider.getIntrinsicHeight();
+        }
+        if(null==divider||0>divider.getIntrinsicWidth()){
+            this.dividerWidth=1;
+        } else {
+            this.dividerWidth = divider.getIntrinsicWidth();
+        }
     }
 
     @Override

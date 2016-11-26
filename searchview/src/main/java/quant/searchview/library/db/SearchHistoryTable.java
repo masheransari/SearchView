@@ -1,4 +1,4 @@
-package quant.searchview.library;
+package quant.searchview.library.db;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -9,11 +9,13 @@ import android.database.sqlite.SQLiteDatabase;
 import java.util.ArrayList;
 import java.util.List;
 
+import quant.searchview.library.SearchItem;
+
 
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class SearchHistoryTable {
     public static final String DEFAULT_KEY="all";
-    private static int mHistorySize = 10000;
+    private static int mHistorySize = 5;
     private static int mConnectionCount = 0;
     private static String mCurrentDatabaseKey;
     private final SearchHistoryDatabase dbHelper;

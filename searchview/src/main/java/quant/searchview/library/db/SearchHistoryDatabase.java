@@ -1,4 +1,4 @@
-package quant.searchview.library;
+package quant.searchview.library.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
