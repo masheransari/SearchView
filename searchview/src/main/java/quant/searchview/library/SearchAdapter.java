@@ -61,10 +61,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
         return filter;
     }
 
-    public void filter(CharSequence text,Runnable action){
-        getFilter().filter(text,action);
-    }
-
     public void setHistorySize(int historySize) {
         historyDatabase.setHistorySize(historySize);
     }
@@ -136,9 +132,14 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
     }
 
     private void updateHistoryItems(){
+        int previousSize = originalList.size();
         originalList.clear();
         originalList.addAll(historyList);
-        notifyItemRangeInserted(0,getItemCount());
+        if(!originalList.isEmpty()){
+            notifyItemRangeInserted(0,getItemCount());
+        } else if(0<previousSize){
+            notifyItemRangeRemoved(0,previousSize);
+        }
     }
 
 
@@ -161,8 +162,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
     }
 
     class SearchFilter  extends Filter{
-        private Runnable completeAction;
-
         @Override
         protected FilterResults performFiltering(CharSequence word) {
             FilterResults filterResults=new FilterResults();
@@ -179,10 +178,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
         @Override
         protected void publishResults(CharSequence constraint, FilterResults results) {
             publishItems(constraint, (List<SearchItem>) results.values);
-            if(null!=completeAction) {
-                completeAction.run();
-                completeAction=null;
-            }
         }
 
         private void publishItems(CharSequence constraint, List<SearchItem> resultItems) {
@@ -203,7 +198,9 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
                             notifyItemRangeRemoved(nextSize, previousSize-nextSize);
                         }
                     } else {
-                        notifyItemRangeChanged(0, previousSize);
+                        if(0<previousSize){
+                            notifyItemRangeChanged(0, previousSize);
+                        }
                         notifyItemRangeInserted(previousSize, nextSize - previousSize);
                     }
                 }
@@ -213,10 +210,6 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
             }
         }
 
-        public void filter(CharSequence text,Runnable completeAction){
-            super.filter(text);
-            this.completeAction=completeAction;
-        }
     }
 
 

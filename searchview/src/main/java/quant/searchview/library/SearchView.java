@@ -31,7 +31,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Filterable;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -39,6 +38,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.lang.reflect.Field;
+
+import quant.searchview.library.observer.MyAdapterDataObserver;
 
 public class SearchView extends FrameLayout implements View.OnClickListener,TextWatcher {
 
@@ -63,6 +64,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
     private ImageView mEmptyImageView;
     private LinearLayout mLinearLayout;
     private SearchDivider searchDivider;
+    private MyAdapterDataObserver adapterDataObserver;
     private int backGroundColor;
     private int backgroundCorners;
     private int mAnimationDuration;
@@ -334,6 +336,12 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
     }
 
     public void setAdapter(final SearchAdapter adapter) {
+        if(null==adapterDataObserver){
+            adapterDataObserver=new MyAdapterDataObserver(this);
+        } else if(null!=mAdapter&&null!=adapterDataObserver){
+            mAdapter.unregisterAdapterDataObserver(adapterDataObserver);
+        }
+        adapter.registerAdapterDataObserver(adapterDataObserver);
         mRecyclerView.setAdapter(mAdapter = adapter);
         adapter.addOnItemClickListener(new SearchAdapter.OnItemClickListener() {
             @Override
@@ -548,21 +556,11 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
 
     // ---------------------------------------------------------------------------------------------
     private void onQueryText(final CharSequence newText) {
-        Runnable filterCompleteAction=new Runnable() {
-            @Override
-            public void run() {
-                if (mOnQueryChangeListener != null && !TextUtils.isEmpty(newText)) {
-                    mOnQueryChangeListener.onQueryTextChange(newText.toString());
-                }else if(null!=mAdapter){
-                    mAdapter.filter(null,null);
-                }
-                showSuggestions();
-            }
-        };
         if (filterLocal&&null!=mAdapter) {
-            mAdapter.filter(newText,filterCompleteAction);
-        } else {
-            filterCompleteAction.run();
+            mAdapter.getFilter().filter(newText);
+        }
+        if (mOnQueryChangeListener != null) {
+            mOnQueryChangeListener.onQueryTextChange(newText.toString());
         }
     }
 
