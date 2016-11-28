@@ -9,6 +9,7 @@ import android.os.Parcelable;
 public class SearchItem implements Parcelable {
     public static final int HISTORY_ITEM=0;
     public static final int QUERY_ITEM=1;
+    public static final int CLEAR_ITEM=2;
     public final String text;
     public final int type;
     public long ct;

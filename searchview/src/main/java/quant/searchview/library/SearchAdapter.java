@@ -2,11 +2,13 @@ package quant.searchview.library;
 
 import android.content.Context;
 import android.graphics.PorterDuff;
+import android.support.annotation.IdRes;
 import android.support.v7.widget.RecyclerView;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,7 +24,7 @@ import java.util.Locale;
 import quant.searchview.library.db.SearchHistoryTable;
 
 
-public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultViewHolder> implements Filterable {
+public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHolder> implements Filterable {
     private static final String TAG = "SearchAdapter";
     private final List<SearchItem> queryList;
     private final List<SearchItem> historyList;
@@ -46,11 +48,11 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
         List<SearchItem> allItems = historyDatabase.getAllItems(key);
         if (!allItems.isEmpty()) {
             historyList.addAll(allItems);
-            originalList.addAll(allItems);
         }
         if(null!= items) {
             queryList.addAll(items);
         }
+        updateHistoryItems();
     }
 
     @Override
@@ -66,24 +68,43 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
     }
 
     @Override
-    public ResultViewHolder onCreateViewHolder(final ViewGroup parent, int viewType) {
+    public BaseViewHolder onCreateViewHolder(final ViewGroup parent, int viewType) {
         final LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        final View view = inflater.inflate(R.layout.search_item, parent, false);
-        return new ResultViewHolder(view);
+        View view;
+        if(SearchItem.CLEAR_ITEM==viewType){
+            view = inflater.inflate(R.layout.clear_history_item,parent,false);
+        } else {
+            view = inflater.inflate(R.layout.search_item, parent, false);
+        }
+        return new BaseViewHolder(view,viewType);
     }
 
     @Override
-    public void onBindViewHolder(ResultViewHolder viewHolder, int position) {
+    public void onBindViewHolder(BaseViewHolder viewHolder, int position) {
         SearchItem item = originalList.get(position);
-        if(SearchItem.HISTORY_ITEM==item.type) {
-            viewHolder.icon_left.setImageResource(R.drawable.ic_history_black_24dp);
+        if(SearchItem.CLEAR_ITEM!=item.type){
+            initSearchItem(viewHolder, item);
         } else {
-            viewHolder.icon_left.setImageResource(R.drawable.ic_search_black_24dp);
+            TextView textView= (TextView) viewHolder.view(R.id.textView_item_text);
+            textView.setTypeface(SearchView.getTextFont());
+            textView.setTextSize(SearchView.getIconColor());
+            textView.setTextColor(SearchView.getTextColor());
         }
-        viewHolder.icon_left.setColorFilter(SearchView.getIconColor(), PorterDuff.Mode.SRC_IN);
-        viewHolder.text.setTypeface(SearchView.getTextFont());
-        viewHolder.text.setTextSize(SearchView.getIconColor());
-        viewHolder.text.setTextColor(SearchView.getTextColor());
+    }
+
+    private void initSearchItem(BaseViewHolder viewHolder, SearchItem item) {
+        ImageView imageView = (ImageView) viewHolder.view(R.id.imageView_item_icon_left);
+        if(SearchItem.HISTORY_ITEM==item.type) {
+            imageView.setImageResource(R.drawable.ic_history_black_24dp);
+        } else {
+            imageView.setImageResource(R.drawable.ic_search_black_24dp);
+        }
+        imageView.setColorFilter(SearchView.getIconColor(), PorterDuff.Mode.SRC_IN);
+
+        TextView textView= (TextView) viewHolder.view(R.id.textView_item_text);
+        textView.setTypeface(SearchView.getTextFont());
+        textView.setTextSize(SearchView.getIconColor());
+        textView.setTextColor(SearchView.getTextColor());
 
         String itemText = item.text;
         String itemTextLower = itemText.toLowerCase(Locale.getDefault());
@@ -91,9 +112,9 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
         if (!TextUtils.isEmpty(queryWord)&&itemTextLower.contains(queryWord) && !queryWord.isEmpty()) {
             SpannableString s = new SpannableString(itemText);
             s.setSpan(new ForegroundColorSpan(SearchView.getTextHighlightColor()), itemTextLower.indexOf(queryWord), itemTextLower.indexOf(queryWord) + queryWord.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            viewHolder.text.setText(s, TextView.BufferType.SPANNABLE);
+            textView.setText(s, TextView.BufferType.SPANNABLE);
         } else {
-            viewHolder.text.setText(item.text);
+            textView.setText(item.text);
         }
     }
 
@@ -104,15 +125,16 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
 
     @Override
     public int getItemViewType(int position) {
-        return position;
+        SearchItem item = getItem(position);
+        return item.type;
     }
 
 
     public void addOnItemClickListener(OnItemClickListener listener) {
-        if (mItemClickListeners == null)
+        if (mItemClickListeners == null){
             mItemClickListeners = new ArrayList<>();
-        else
-            mItemClickListeners.add(listener);
+        }
+        mItemClickListeners.add(listener);
     }
 
     public void swapItems(List<SearchItem> newItems,String word) {
@@ -140,6 +162,11 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
         } else if(0<previousSize){
             notifyItemRangeRemoved(0,previousSize);
         }
+        //添加清空条目
+        if(!originalList.isEmpty()){
+            originalList.add(new SearchItem(null,SearchItem.CLEAR_ITEM));
+        }
+        notifyItemInserted(getItemCount());
     }
 
 
@@ -213,26 +240,57 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.ResultView
     }
 
 
-    public class ResultViewHolder extends RecyclerView.ViewHolder {
+    public class BaseViewHolder extends RecyclerView.ViewHolder {
 
-        final ImageView icon_left;
-        final TextView text;
+        private final SparseArray<View> cacheViews;
 
-        public ResultViewHolder(View view) {
-            super(view);
-            icon_left = (ImageView) view.findViewById(R.id.imageView_item_icon_left);
-            text = (TextView) view.findViewById(R.id.textView_item_text);
-            view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mItemClickListeners != null) {
-                        for (OnItemClickListener listener : mItemClickListeners)
-                            listener.onItemClick(v, getLayoutPosition());
+        public BaseViewHolder(View itemView,int type) {
+            super(itemView);
+            this.cacheViews=new SparseArray<>();
+            cacheView(itemView);
+            if(SearchItem.CLEAR_ITEM!=type){
+                itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if (mItemClickListeners != null) {
+                            for (OnItemClickListener listener : mItemClickListeners)
+                                listener.onItemClick(v, getLayoutPosition());
+                        }
                     }
-                }
-            });
+                });
+            } else {
+                itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        int size = originalList.size();
+                        historyList.clear();
+                        originalList.clear();
+                        historyDatabase.clearDatabase(searchKey);
+                        notifyItemRangeRemoved(0,size);
+                    }
+                });
+            }
         }
 
+        private void cacheView(View itemView) {
+            if(itemView instanceof ViewGroup){
+                ViewGroup layout = (ViewGroup) itemView;
+                this.cacheViews.append(layout.getId(),layout);
+                for(int i=0;i<layout.getChildCount();i++){
+                    View childView = layout.getChildAt(i);
+                    if(childView instanceof ViewGroup){
+                        cacheView(childView);
+                    } else {
+                        this.cacheViews.append(childView.getId(),childView);
+                    }
+                }
+            } else {
+                this.cacheViews.append(itemView.getId(),itemView);
+            }
+        }
+        public View view(@IdRes int id){
+            return this.cacheViews.get(id);
+        }
     }
 
 }

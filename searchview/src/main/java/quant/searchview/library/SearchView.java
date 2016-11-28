@@ -448,7 +448,6 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
                 mRecyclerView.requestLayout();
             }
             setBackgroundCompat(mLinearLayout,getGradientDrawable(backgroundCorners, backgroundCorners, 0, 0, backGroundColor));
-            Log.e(TAG,"showSuggestions-setBackgroundCompat");
         } else {
             mDividerView.setVisibility(View.GONE);
             SearchAnimator.fadeOut(mRecyclerView, mAnimationDuration);
@@ -457,12 +456,10 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
     }
 
     public void hideSuggestions() {
-        Log.e(TAG,"hideSuggestions");
         if (mAdapter != null) {
             mDividerView.setVisibility(View.GONE);
             SearchAnimator.fadeOut(mRecyclerView, mAnimationDuration);
             setBackgroundCompat(mLinearLayout,getGradientDrawable(backgroundCorners, backgroundCorners, backgroundCorners, backgroundCorners, backGroundColor));
-            Log.e(TAG,"hideSuggestions-setBackgroundCompat");
         }
     }
 

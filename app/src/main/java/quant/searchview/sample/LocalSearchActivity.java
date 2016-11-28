@@ -9,7 +9,6 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import quant.searchview.library.SearchAdapter;
 import quant.searchview.library.SearchItem;
@@ -37,6 +36,7 @@ public class LocalSearchActivity extends AppCompatActivity {
         }
         final SearchAdapter searchAdapter = new SearchAdapter(this, suggestionsList,LOCAL_KEY);
         searchAdapter.setHistorySize(100);//设置历史条目最多展示个数,默认为5个,以最新使用为主
+        searchView.showProgress();
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {

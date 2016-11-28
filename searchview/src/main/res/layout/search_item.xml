@@ -20,22 +20,16 @@
 
     <TextView
         android:id="@+id/textView_item_text"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="start|center_vertical"
         android:layout_marginEnd="@dimen/search_item_margin_text"
         android:layout_marginLeft="@dimen/search_item_margin_text"
         android:layout_marginRight="@dimen/search_item_margin_text"
         android:layout_marginStart="@dimen/search_item_margin_text"
-        android:layout_weight="1"
         android:gravity="start|center_vertical"
         android:maxLines="1"
         android:textIsSelectable="false" />
 
-    <ImageView
-        android:id="@+id/imageView_item_icon_right"
-        android:layout_width="@dimen/search_icon"
-        android:layout_height="@dimen/search_icon"
-        android:contentDescription="@string/app_name" />
 
 </LinearLayout>

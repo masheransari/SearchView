@@ -4,5 +4,6 @@
     <string name="app_name">SearchView</string>
     <string name="search_behavior" translatable="false">android.support.design.widget.AppBarLayout$ScrollingViewBehavior</string>
     <string name="search_behavior2" translatable="false">com.lapism.searchview.SearchBehavior</string>
+    <string name="clear_history">清空历史记录</string>
 
 </resources>
