@@ -158,15 +158,11 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHo
         originalList.clear();
         originalList.addAll(historyList);
         if(!originalList.isEmpty()){
+            originalList.add(new SearchItem(null,SearchItem.CLEAR_ITEM));
             notifyItemRangeInserted(0,getItemCount());
         } else if(0<previousSize){
             notifyItemRangeRemoved(0,previousSize);
         }
-        //添加清空条目
-        if(!originalList.isEmpty()){
-            originalList.add(new SearchItem(null,SearchItem.CLEAR_ITEM));
-        }
-        notifyItemInserted(getItemCount());
     }
 
 
@@ -253,8 +249,10 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHo
                     @Override
                     public void onClick(View v) {
                         if (mItemClickListeners != null) {
-                            for (OnItemClickListener listener : mItemClickListeners)
-                                listener.onItemClick(v, getLayoutPosition());
+                            int size = mItemClickListeners.size();
+                            for(int i=size-1;i>=0;i--){
+                                mItemClickListeners.get(i).onItemClick(v, getLayoutPosition());
+                            }
                         }
                     }
                 });

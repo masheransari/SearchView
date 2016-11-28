@@ -30,7 +30,6 @@ public class MyAdapterDataObserver extends RecyclerView.AdapterDataObserver {
     @Override
     public void onItemRangeChanged(int positionStart, int itemCount, Object payload) {
         super.onItemRangeChanged(positionStart, itemCount, payload);
-        searchView.showSuggestions();
     }
 
     @Override
