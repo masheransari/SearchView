@@ -24,7 +24,6 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -196,7 +195,6 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
         mSearchEditText.setOnFocusChangeListener(new OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
-                Log.e(TAG,"onFocusChange:"+hasFocus);
                 if (hasFocus) {
                     addFocus();
                 } else {
@@ -347,7 +345,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
             @Override
             public void onItemClick(View view, int position) {
                 mAdapter.insertHistoryItem(adapter.getItem(position));
-                close(false);
+                close();
             }
         });
     }
@@ -463,14 +461,14 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
         }
     }
 
-    public void open(boolean animate) {
+    public void open() {
         if (mShouldClearOnOpen && mSearchEditText.length() > 0) {
             mSearchEditText.getText().clear();
         }
         mSearchEditText.requestFocus();
     }
 
-    public void close(boolean animate) {
+    public void close() {
         if (mShouldClearOnClose && mSearchEditText.length() > 0) {
             mSearchEditText.getText().clear();
         }
@@ -595,7 +593,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
         if (mOnQueryChangeListener == null || mOnQueryChangeListener.onQueryTextSubmit(query.toString())) {
             if (!TextUtils.isEmpty(query) && TextUtils.getTrimmedLength(query) > 0) {
                 mAdapter.insertHistoryItem(new SearchItem(query.toString(),SearchItem.HISTORY_ITEM));
-                close(true);
+                close();
             }
         }
     }
@@ -604,7 +602,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
     public void onClick(View v) {
         if (v == mBackImageView) {
             if (mSearchArrow != null && mIsSearchArrowHamburgerState == SearchDrawable.STATE_ANIM_START) {
-                close(true);
+                close();
             } else {
                 if (mOnMenuClickListener != null) {
                     mOnMenuClickListener.onMenuClick();
@@ -615,7 +613,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
                 mSearchEditText.getText().clear();
             }
         } else if (v == mShadowView) {
-            close(true);
+            close();
         }
     }
 
@@ -638,7 +636,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
 
         SavedState ss = (SavedState) state;
         if (ss.isSearchOpen) {
-            open(true);
+            open();
             mSearchEditText.requestFocus();
         }
         super.onRestoreInstanceState(ss.getSuperState());

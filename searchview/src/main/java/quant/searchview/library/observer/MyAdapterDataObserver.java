@@ -35,13 +35,17 @@ public class MyAdapterDataObserver extends RecyclerView.AdapterDataObserver {
     @Override
     public void onItemRangeInserted(int positionStart, int itemCount) {
         super.onItemRangeInserted(positionStart, itemCount);
-        searchView.showSuggestions();
+        if(searchView.isSearchOpen()){
+            searchView.showSuggestions();
+        }
     }
 
     @Override
     public void onItemRangeRemoved(int positionStart, int itemCount) {
         super.onItemRangeRemoved(positionStart, itemCount);
-        searchView.showSuggestions();
+        if(searchView.isSearchOpen()){
+            searchView.showSuggestions();
+        }
     }
 
     @Override

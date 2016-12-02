@@ -15,8 +15,6 @@ import quant.searchview.library.SearchAdapter;
 import quant.searchview.library.SearchItem;
 import quant.searchview.library.SearchView;
 
-import static quant.searchview.sample.DataProvider.ITEMS;
-
 /**
  * Created by czz on 2016/11/26.
  * 动态搜索示例,用于做在线搜索数据,或者一些自定义逻辑搜索

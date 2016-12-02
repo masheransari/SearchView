@@ -34,7 +34,7 @@ public class LocalSearchActivity extends AppCompatActivity {
         for (int i = 0; i < ITEMS.length; i++) {
             suggestionsList.add(new SearchItem(ITEMS[i]));
         }
-        final SearchAdapter searchAdapter = new SearchAdapter(this, suggestionsList,LOCAL_KEY);
+        final SearchAdapter searchAdapter = new SearchAdapter(this, suggestionsList,LOCAL_KEY,false);
         searchAdapter.setHistorySize(100);//设置历史条目最多展示个数,默认为5个,以最新使用为主
         searchView.showProgress();
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {

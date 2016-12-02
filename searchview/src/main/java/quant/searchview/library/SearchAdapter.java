@@ -34,23 +34,29 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHo
     public final String searchKey;
     private String queryWord;
     private SearchFilter filter;
+    private boolean showHistory;
 
     public SearchAdapter(Context context,List<SearchItem> suggestionsList) {
-        this(context,suggestionsList,SearchHistoryTable.DEFAULT_KEY);
+        this(context,suggestionsList,SearchHistoryTable.DEFAULT_KEY,true);
     }
 
-    public SearchAdapter(Context context, List<SearchItem> items,String key) {
-        searchKey=key;
-        queryList =new ArrayList<>();
-        historyList =new ArrayList<>();
-        originalList=new ArrayList<>();
-        historyDatabase = new SearchHistoryTable(context);
+    public SearchAdapter(Context context, List<SearchItem> items,String key){
+        this(context,items,key,true);
+    }
+
+    public SearchAdapter(Context context, List<SearchItem> items,String key,boolean showHistory) {
+        this.searchKey=key;
+        this.showHistory=showHistory;
+        this.queryList =new ArrayList<>();
+        this.historyList =new ArrayList<>();
+        this.originalList=new ArrayList<>();
+        this.historyDatabase = new SearchHistoryTable(context);
         List<SearchItem> allItems = historyDatabase.getAllItems(key);
-        if (!allItems.isEmpty()) {
-            historyList.addAll(allItems);
+        if (showHistory&&!allItems.isEmpty()) {
+            this.historyList.addAll(allItems);
         }
         if(null!= items) {
-            queryList.addAll(items);
+            this.queryList.addAll(items);
         }
         updateHistoryItems();
     }
@@ -154,14 +160,16 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHo
     }
 
     private void updateHistoryItems(){
-        int previousSize = originalList.size();
-        originalList.clear();
-        originalList.addAll(historyList);
-        if(!originalList.isEmpty()){
-            originalList.add(new SearchItem(null,SearchItem.CLEAR_ITEM));
-            notifyItemRangeInserted(0,getItemCount());
-        } else if(0<previousSize){
-            notifyItemRangeRemoved(0,previousSize);
+        if(showHistory){
+            int previousSize = originalList.size();
+            originalList.clear();
+            originalList.addAll(historyList);
+            if(!originalList.isEmpty()){
+                originalList.add(new SearchItem(null,SearchItem.CLEAR_ITEM));
+                notifyItemRangeInserted(0,getItemCount());
+            } else if(0<previousSize){
+                notifyItemRangeRemoved(0,previousSize);
+            }
         }
     }
 
