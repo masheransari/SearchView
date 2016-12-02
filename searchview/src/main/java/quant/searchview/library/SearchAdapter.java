@@ -239,6 +239,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHo
                 //展示所有
                 updateHistoryItems();
             } else if(0<previousSize){
+                originalList.clear();
                 notifyItemRangeRemoved(0,previousSize);
             }
         }
