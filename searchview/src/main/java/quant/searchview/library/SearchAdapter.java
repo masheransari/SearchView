@@ -178,7 +178,7 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHo
         void onItemClick(View view, int position);
     }
 
-    private List<SearchItem> queryItems(List<SearchItem> items,CharSequence key) {
+    protected List<SearchItem> queryItems(List<SearchItem> items,CharSequence key) {
         List<SearchItem> resultItems=new ArrayList<>();
         if(null!=items) {
             for (SearchItem item : items) {
