@@ -213,8 +213,8 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHo
 
         private void publishItems(CharSequence constraint, List<SearchItem> resultItems) {
             queryWord=!TextUtils.isEmpty(constraint)?constraint.toString():null;
+            int previousSize=originalList.size();
             if(!TextUtils.isEmpty(constraint)) {
-                int previousSize=originalList.size();
                 if(null!=resultItems) {
                     originalList.clear();
                     int nextSize = resultItems.size();
@@ -235,9 +235,11 @@ public class SearchAdapter extends RecyclerView.Adapter<SearchAdapter.BaseViewHo
                         notifyItemRangeInserted(previousSize, nextSize - previousSize);
                     }
                 }
-            } else {
+            } else if(showHistory){
                 //展示所有
                 updateHistoryItems();
+            } else if(0<previousSize){
+                notifyItemRangeRemoved(0,previousSize);
             }
         }
 
