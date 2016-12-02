@@ -12,6 +12,7 @@ public class SearchItem implements Parcelable {
     public static final int CLEAR_ITEM=2;
     public final String text;
     public final int type;
+    public Object obj;
     public long ct;
 
     public SearchItem(String text) {
