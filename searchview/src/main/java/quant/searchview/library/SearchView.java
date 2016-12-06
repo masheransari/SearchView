@@ -265,6 +265,7 @@ public class SearchView extends FrameLayout implements View.OnClickListener,Text
     // ---------------------------------------------------------------------------------------------
     public void setTextOnly(CharSequence text) {
         mSearchEditText.setText(text);
+        mSearchEditText.setSelection(TextUtils.isEmpty(text)?0:text.length());
     }
 
     public CharSequence getTextOnly() {
